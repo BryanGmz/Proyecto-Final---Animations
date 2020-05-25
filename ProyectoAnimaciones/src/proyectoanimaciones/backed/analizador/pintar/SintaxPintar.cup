@@ -1,0 +1,343 @@
+package proyectoanimaciones.backed.analizador.pintar;
+
+import proyectoanimaciones.backed.objetos.*;
+import proyectoanimaciones.backed.manejadores.*;
+import proyectoanimaciones.gui.*;
+import java_cup.runtime.*;
+
+parser code {:
+
+    private ManejadorSintactico ms = ManejadorSintactico.getInstancia();
+    private ManejadorPintar mp = ManejadorPintar.getManejadorPintar();
+    private ManejadorIfWhile iw = ManejadorIfWhile.getInstancia();
+    private boolean bandera;
+    private boolean primerBolean;
+    private String aux = "";
+    private Principal principal;
+
+    public void setPrincipal(Principal principal) {
+        this.principal = principal;
+    }
+
+    public String getAux() {
+        return aux;
+    }
+
+    public void setAux(String aux) {
+        this.aux += aux;
+    }    
+    
+    public void clean(){
+        this.aux = "";
+    }
+
+    public SintaxPintar(LexicoPintar lexer) { 
+        super(lexer);   
+        /*         ManejadorSintactico.getSimbolosLnz().getSimbolos().clear(); */
+    }
+
+    public void setAccion(String tipo, String mensaje, String accion){
+        System.out.println("ERROR Lexico Tipo: " + tipo + "\t Mensaje: " + mensaje + "\tAcción: ERROR\n");
+    }
+
+    @Override
+    public void syntax_error(Symbol s){
+        try {
+            principal.addErrores(
+                    "\nError de Sintaxis: " 
+                    + "\n\tLinea #:                 << " + (s.right + 1) + " >>"
+                    + "\n\tColumna #                << " + (((s.left)/(s.right)) + 1) + " >>"
+                    + "\n\tToken NO Reconocido:     << " + (s.value) + " >>" );
+        } catch (Exception e) {
+            System.out.println("Error " + e.toString());
+        }
+    }
+:}
+    
+
+/* Terminales */
+
+terminal Vars, Instrucciones, Pintar;
+terminal True, False, Int, String, Boolean, If, Else, While, And, Or;
+terminal Menor, Mayor, Igual, MenorIgual, MayorIgual, IgualIgual, MenorMayor, Punto;
+terminal Numero, Mas, Menos, Por, Div, Coma, PuntoComa;
+terminal CorcheteA, CorcheteC, LlaveA, LlaveC, ParentesisA, ParentesisC;
+terminal String Identificador, Cadena;
+
+/* No Terminales */
+
+non terminal inicio;
+non terminal declaracion_vars, estructura_instrucciones, estructura_vars;
+non terminal estructura_int, estructura_string, estructura_boolean, expresion_id_img_pintar, expresion_id_instr_wh;
+non terminal declaracion_int, declaracion_string, declaracion_boolean, expresiones_logicas, declaracion_asignaciones_if, expresiones_logicas_p_wh, expresion_int_p_wh;
+non terminal expresion_int, expresion_int_p, expresion_string, expresion_boolean, expresiones_logicas_p, declaracion_estructuras_if_while;
+non terminal declaracion_asignaciones, declaracion_instr, declaracion_instrucciones, declaracion_estructuras, declaracion_instrucciones_if_while;
+non terminal estructura_if, estructura_while, estructura_pintar, expresion_id_instr, instr_id, expresion_id_pintar, declaracion_instrucciones_else;
+non terminal declaracion_instrucciones_while, declaracion_estructuras_while, declaracion_instr_wh, estructura_pintar_iw;
+
+/* Precedencia */ 
+
+precedence left Mas, Menos;
+precedence left Por, Div;
+precedence left Igual, Menor, Mayor, MayorIgual, MenorIgual, IgualIgual, MenorMayor;
+precedence left Or, And;
+
+/* Gramaticas */
+
+start with inicio;
+
+inicio ::= 
+    estructura_vars estructura_instrucciones            {:System.out.println("Aceptado\n"); ms.imp(); System.out.println("\t"); ms.imprimir();:}
+    | expresion_boolean:e                               {:iw.setCondicional((boolean) e);:}
+    | Pintar expresion_int_p:e                          {:iw.setValor(e);:}
+    | declaracion_instr:e                                                             
+;
+
+estructura_vars ::=
+    Vars LlaveA declaracion_vars LlaveC
+    | Vars LlaveA LlaveC 
+    | error:e LlaveC                                {:parser.syntax_error((Symbol) e);:}
+;
+
+declaracion_vars ::=
+    estructura_int
+    | estructura_string 
+    | estructura_boolean
+    | declaracion_vars estructura_int
+    | declaracion_vars estructura_string 
+    | declaracion_vars estructura_boolean
+    | error:e PuntoComa                             {:parser.syntax_error((Symbol) e);:}
+;
+
+estructura_int ::= 
+    Int declaracion_int PuntoComa
+;
+
+estructura_string ::= 
+    String declaracion_string PuntoComa
+;
+
+estructura_boolean ::= 
+    Boolean declaracion_boolean:e PuntoComa
+;
+
+declaracion_int ::= 
+    Identificador:a Igual expresion_int:e                           {:ms.asignarValorIdInt(a.toString(), e, aleft, aright, false);;:}
+    | Identificador:a                                               {:ms.asignarValorIdInt(a.toString(), null, aleft, aright, true);;:}
+    | declaracion_int Coma Identificador:a Igual expresion_int:e    {:ms.asignarValorIdInt(a.toString(), e, aleft, aright, false);;:}
+    | declaracion_int Coma Identificador:a                          {:ms.asignarValorIdInt(a.toString(), null, aleft, aright, true);;:}
+;
+
+expresion_int ::= 
+    expresion_int:a Mas expresion_int:b         {:RESULT = ms.realizarOperaciones(ms.comrpobarInt(a, aleft, aright), ms.comrpobarInt(b, bleft, bright), aleft, aright, bleft, bright, 1);:}
+    | expresion_int:a Menos expresion_int:b     {:RESULT = ms.realizarOperaciones(ms.comrpobarInt(a, aleft, aright), ms.comrpobarInt(b, bleft, bright), aleft, aright, bleft, bright, 2);:}
+    | expresion_int:a Por expresion_int:b       {:RESULT = ms.realizarOperaciones(ms.comrpobarInt(a, aleft, aright), ms.comrpobarInt(b, bleft, bright), aleft, aright, bleft, bright, 3);:}
+    | expresion_int:a Div expresion_int:b       {:RESULT = ms.realizarOperaciones(ms.comrpobarInt(a, aleft, aright), ms.comrpobarInt(b, bleft, bright), aleft, aright, bleft, bright, 4);:}
+    | Numero:e                                  {:RESULT = Integer.parseInt(e.toString());:}
+    | Identificador:e                           {:RESULT = ms.buscarIdEnTabla(e, eleft, eright);:}
+;
+
+
+declaracion_string ::=
+    Identificador:a Igual expresion_string:e                                {:ms.asignarValorIdString(a.toString(), e, aleft, aright, false);;:}
+    | Identificador:a                                                       {:ms.asignarValorIdString(a.toString(), null, aleft, aright, true);;:}
+    | declaracion_string Coma Identificador:a Igual expresion_string:e      {:ms.asignarValorIdString(a.toString(), e, aleft, aright, false);;:}
+    | declaracion_string Coma Identificador:a                               {:ms.asignarValorIdString(a.toString(), null, aleft, aright, true);;:}
+;
+
+expresion_string ::= 
+    expresion_string:a Mas expresion_string:b   {:RESULT = ms.concatenarCadena(a, b, aleft, aright, bleft, bright);:}   
+    | Cadena:e                                  {:RESULT = e.toString();:}
+    | Identificador:e                           {:RESULT = ms.comprobarString(ms.buscarIdEnTabla(e.toString(), eleft, eright), eleft, eright);:} 
+;
+
+declaracion_boolean ::= 
+    Identificador:e                                                         {:ms.asignarValorIdBoolean(e, null, eleft, eright, true);:}
+    | Identificador:e Igual expresion_boolean:a                             {:ms.asignarValorIdBoolean(e.toString(), a, eleft, eright, false);:}
+    | declaracion_boolean Coma Identificador:e Igual expresion_boolean:a    {:ms.asignarValorIdBoolean(e.toString(), a, eleft, eright, false);:}
+    | declaracion_boolean Coma Identificador:e                              {:ms.asignarValorIdBoolean(e.toString(), null, eleft, eright, true);:}
+;
+
+expresion_boolean ::= 
+    expresion_boolean:a And expresion_boolean:b         {:RESULT = ms.realizarOperacionesAndOr(a, b, aleft, aright, bleft, bright, 1);:}
+    | expresion_boolean:a Or expresion_boolean:b        {:RESULT = ms.realizarOperacionesAndOr(a, b, aleft, aright, bleft, bright, 2);:}
+    | expresiones_logicas:e                             {:RESULT = e;:}
+;
+
+expresiones_logicas ::=
+    expresiones_logicas:a Menor expresiones_logicas:b           {:RESULT = ms.realizarOperacionesLogicas(a, b, aleft, aright, bleft, bright, 1);:}
+    | expresiones_logicas:a Mayor expresiones_logicas:b         {:RESULT = ms.realizarOperacionesLogicas(a, b, aleft, aright, bleft, bright, 2);:}
+    | expresiones_logicas:a IgualIgual expresiones_logicas:b    {:RESULT = ms.realizarOperacionesLogicas(a, b, aleft, aright, bleft, bright, 3);:}
+    | expresiones_logicas:a MenorIgual expresiones_logicas:b    {:RESULT = ms.realizarOperacionesLogicas(a, b, aleft, aright, bleft, bright, 4);:}
+    | expresiones_logicas:a MayorIgual expresiones_logicas:b    {:RESULT = ms.realizarOperacionesLogicas(a, b, aleft, aright, bleft, bright, 5);:}
+    | expresiones_logicas:a MenorMayor expresiones_logicas:b    {:RESULT = ms.realizarOperacionesLogicas(a, b, aleft, aright, bleft, bright, 6);:}
+    | expresion_int:e                                           {:RESULT = e;:}                                            
+    | True                                                      {:RESULT = true;:}
+    | False                                                     {:RESULT = false;:}
+;
+
+/* Produccion de cadenas y validaciones */ 
+
+declaracion_instr ::= 
+    Identificador:e Igual expresion_id_instr:a PuntoComa        {:if(bandera) {RESULT = new Simbolo(mp.comprobarTipoObjeto(a), a, e.toString());} else {ms.asignarVal(e.toString(), a, eleft, eright, bandera);}:}
+;
+                                                               
+declaracion_instr_wh ::= 
+    Identificador:e Igual expresion_id_instr_wh:a PuntoComa     {:if(a != null && e != null) {RESULT  = new Simbolo("String", e.toString() + " = " + a.toString() + ";", e.toString());} else {RESULT = null;}:}
+;
+
+expresion_id_instr ::= 
+    expresiones_logicas_p:a And expresiones_logicas_p:e                 {:RESULT = ms.realizarOperacionesAndOrInst(a, e, aleft, aright, eleft, eright, 1);:}              
+    | expresiones_logicas_p:a Or expresiones_logicas_p:e                {:RESULT = ms.realizarOperacionesAndOrInst(a, e, aleft, aright, eleft, eright, 2);:} 
+    | expresiones_logicas_p:a                                           {:RESULT = a;:}
+;
+
+expresiones_logicas_p ::=
+    expresiones_logicas_p:a Menor expresiones_logicas_p:e               {:RESULT = ms.realizarOperacionesBoolean(a, e, aleft, aright, eleft, eright, 1);:}
+    | expresiones_logicas_p:a Mayor expresiones_logicas_p:e             {:RESULT = ms.realizarOperacionesBoolean(a, e, aleft, aright, eleft, eright, 2);:}
+    | expresiones_logicas_p:a IgualIgual expresiones_logicas_p:e        {:RESULT = ms.realizarOperacionesBoolean(a, e, aleft, aright, eleft, eright, 3);:}
+    | expresiones_logicas_p:a MenorIgual expresiones_logicas_p:e        {:RESULT = ms.realizarOperacionesBoolean(a, e, aleft, aright, eleft, eright, 4);:}
+    | expresiones_logicas_p:a MayorIgual expresiones_logicas_p:e        {:RESULT = ms.realizarOperacionesBoolean(a, e, aleft, aright, eleft, eright, 5);:}
+    | expresiones_logicas_p:a MenorMayor expresiones_logicas_p:e        {:RESULT = ms.realizarOperacionesBoolean(a, e, aleft, aright, eleft, eright, 6);:}
+    | expresion_int_p:e                                                 {:RESULT = e;:}
+    | True                                                              {:aux += " true"; RESULT = true;:}
+    | False                                                             {:aux += " false"; RESULT = false;:}
+;
+
+expresion_int_p ::= 
+    expresion_int_p:a Mas expresion_int_p:e             {:RESULT = ms.realizarOperacionesInstrIP(a, e, aleft, aright, eleft, eright, 1, false);:}
+    | expresion_int_p:a Menos expresion_int_p:e         {:RESULT = ms.realizarOperacionesInstrIP(a, e, aleft, aright, eleft, eright, 2, false);:}
+    | expresion_int_p:a Por expresion_int_p:e           {:RESULT = ms.realizarOperacionesInstrIP(a, e, aleft, aright, eleft, eright, 3, false);:}
+    | expresion_int_p:a Div expresion_int_p:e           {:RESULT = ms.realizarOperacionesInstrIP(a, e, aleft, aright, eleft, eright, 4, false);:}
+    | expresion_int_p:a Punto Numero:e                  {:RESULT = ms.realizarOperacionesInstrIP(a, Integer.parseInt(e.toString()), aleft, aright, eleft, eright, 5, false);:}
+    | expresion_int_p:a Punto Identificador:e           {:RESULT = ms.realizarOperacionesInstrIP(a, ms.buscarSimbolo(e.toString(), "", eleft, eright, false, true, true), aleft, aright, eleft, eright, 5, false);:}
+    | Numero:e                                          {:RESULT = Integer.parseInt(e.toString());:}
+    | Identificador:e                                   {:RESULT = ms.buscarSimbolo(e.toString(), "", eleft, eright, true, true, true);:} 
+    | Cadena:e                                          {:RESULT = e.replaceAll("\"", "");:}
+;
+
+expresion_id_instr_wh ::= 
+    expresiones_logicas_p_wh:a And expresiones_logicas_p_wh:e                   {:if(a != null && e != null) {RESULT = a.toString() + " AND " + e.toString();} else {RESULT = null;}:}            
+    | expresiones_logicas_p_wh:a Or expresiones_logicas_p_wh:e                  {:if(a != null && e != null) {RESULT = a.toString() + " OR " + e.toString();} else {RESULT = null;}:} 
+    | expresiones_logicas_p_wh:a                                                {:RESULT = a;:}
+;
+
+expresiones_logicas_p_wh ::=
+    expresiones_logicas_p_wh:a Menor expresiones_logicas_p_wh:e                 {:if(a != null && e != null) {RESULT = a.toString() + " < " + e.toString();} else {RESULT = null;}:}
+    | expresiones_logicas_p_wh:a Mayor expresiones_logicas_p_wh:e               {:if(a != null && e != null) {RESULT = a.toString() + " > " + e.toString();} else {RESULT = null;}:}
+    | expresiones_logicas_p_wh:a IgualIgual expresiones_logicas_p_wh:e          {:if(a != null && e != null) {RESULT = a.toString() + " == " + e.toString();} else {RESULT = null;}:}
+    | expresiones_logicas_p_wh:a MenorIgual expresiones_logicas_p_wh:e          {:if(a != null && e != null) {RESULT = a.toString() + " <= " + e.toString();} else {RESULT = null;}:}
+    | expresiones_logicas_p_wh:a MayorIgual expresiones_logicas_p_wh:e          {:if(a != null && e != null) {RESULT = a.toString() + " >= " + e.toString();} else {RESULT = null;}:}
+    | expresiones_logicas_p_wh:a MenorMayor expresiones_logicas_p_wh:e          {:if(a != null && e != null) {RESULT = a.toString() + " <> " + e.toString();} else {RESULT = null;}:}
+    | expresion_int_p_wh:e                                                      {:RESULT = e;:}
+    | True                                                                      {:RESULT = "true";:}
+    | False                                                                     {:RESULT = "false";:}
+;
+ 
+expresion_int_p_wh ::= 
+    expresion_int_p_wh:a Mas expresion_int_p_wh:e               {:if(a != null && e != null) {RESULT = a.toString() + " + " + e.toString();} else {RESULT = null;}:}
+    | expresion_int_p_wh:a Menos expresion_int_p_wh:e           {:if(a != null && e != null) {RESULT = a.toString() + " - " + e.toString();} else {RESULT = null;}:}
+    | expresion_int_p_wh:a Por expresion_int_p_wh:e             {:if(a != null && e != null) {RESULT = a.toString() + " / " + e.toString();} else {RESULT = null;}:}
+    | expresion_int_p_wh:a Div expresion_int_p_wh:e             {:if(a != null && e != null) {RESULT = a.toString() + " * " + e.toString();} else {RESULT = null;}:}
+    | expresion_int_p_wh:a Punto Numero:e                       {:if(a != null && e != null) {RESULT = a.toString() + " .. " + e.toString();} else {RESULT = null;}:}
+    | expresion_int_p_wh:a Punto Identificador:e                {:if(a != null && e != null) {RESULT = a.toString() + " .. " + e.toString();} else {RESULT = null;}:}
+    | Numero:e                                                  {:RESULT = Integer.parseInt(e.toString());:}
+    | Identificador:e                                           {:Object o = ms.buscarSimbolo(e.toString(), "", eleft, eright, true, true, true); if(o != null) {RESULT = e.toString();} else {RESULT = null;}:} 
+    | Cadena:e                                                  {:RESULT = e.replaceAll("\"", "");:}
+;
+
+expresion_id_pintar ::= 
+    expresion_int_p:a Mas expresion_int_p:e                 {:RESULT = mp.buscaColoresId(ms.realizarOperacionesInstrIP(a, e, aleft, aright, eleft, eright, 1, true), "", aleft, aright);:}
+    | Identificador:e                                       {:RESULT = mp.buscaColoresId(ms.buscarSimbolo(e.toString(), "", eleft, eright, true, true, false), e.toString(), eleft, eright);:} 
+    | Cadena:e                                              {:RESULT = mp.buscaColoresId(e.toString().replaceAll("\"", ""), e.toString().replaceAll("\"", ""), eleft, eright);:} 
+;
+
+expresion_id_img_pintar ::= 
+    expresion_id_img_pintar:a Mas expresion_id_img_pintar:e                 {:RESULT = mp.buscaImgId(ms.realizarOperacionesInstrIP(a, e, aleft, aright, eleft, eright, 1, true), "", aleft, aright);:}
+    | Identificador:e                                                       {:RESULT = mp.buscaImgId(ms.buscarSimbolo(e.toString(), "", eleft, eright, true, true, false), e, eleft, eright);:} 
+    | Cadena:e                                                              {:RESULT = mp.buscaImgId(e.toString().replaceAll("\"", ""), e, eleft, eright);:} 
+;
+
+estructura_pintar ::=
+    Pintar ParentesisA expresion_id_pintar:a Coma expresion_id_img_pintar:b Coma expresion_int_p:c Coma expresion_int_p:d ParentesisC PuntoComa
+    {:RESULT = mp.comprobarPintar(mp.buscaColores(a, aleft, aright), mp.buscaImg(b, bleft, bright), c, d, aleft, aright, bleft, bright, cleft, cright, dleft, dright, bandera);:}
+;
+
+estructura_pintar_iw ::=
+    Pintar ParentesisA expresion_id_pintar:a Coma expresion_id_img_pintar:b Coma expresion_int_p_wh:c Coma expresion_int_p_wh:d ParentesisC PuntoComa
+    {:RESULT = mp.comprobarPintar(mp.buscaColores(a, aleft, aright), mp.buscaImg(b, bleft, bright), c, d, aleft, aright, bleft, bright, cleft, cright, dleft, dright, bandera);:}
+;
+
+estructura_while ::= 
+    While ParentesisA declaracion_asignaciones ParentesisC CorcheteA declaracion_instrucciones_while CorcheteC       {:RESULT = ms.removerEstructura();/*bandera = false;*/:}
+;
+
+estructura_if ::= 
+    If ParentesisA declaracion_asignaciones_if ParentesisC CorcheteA declaracion_instrucciones_if_while CorcheteC       {:bandera = false; RESULT = ms.removerEstructura();:}/*{:bandera = false;:}*/
+    | If ParentesisA declaracion_asignaciones_if ParentesisC CorcheteA declaracion_instrucciones_if_while CorcheteC   
+      Else CorcheteA declaracion_instrucciones_else CorcheteC                                                           {:bandera = false; RESULT = ms.removerEstructura();:}/*{:bandera = false;:}*/
+;
+
+declaracion_asignaciones_if ::= 
+    expresion_id_instr:e                    {:System.out.println("Aux if " + e); ms.agregarNuevaEstructura(true, e); bandera = true;:}
+;
+
+declaracion_asignaciones ::= 
+    expresion_id_instr_wh:e                 {:System.out.println("Aux Wh " + e); ms.agregarNuevaEstructura(false, e); bandera = true;:}
+;
+
+declaracion_estructuras ::=
+    estructura_if:e                     {:iw.realizarIfWhile((TablaSimbolos) e);  /*System.out.println(e);*/ /* Aca hay que realizar el if */ bandera = false;:}  
+    | estructura_while:e                {:iw.realizarIfWhile((TablaSimbolos) e);  /*System.out.println(e);*/ /* Aca hay que realizar el while */ bandera = false;:}   
+    | estructura_pintar                 {:/* Aca se realizo la asignacion ya al pintar en lienzo */:}
+    | declaracion_instr                 {:/* Aca se realizo la asignacion de las variables */:}
+    | error:e PuntoComa       {:parser.syntax_error((Symbol) e);:}
+;
+
+declaracion_estructuras_if_while ::=
+    estructura_if:e             {:RESULT = e;:}
+    | estructura_while:e        {:RESULT = e;:}
+    | estructura_pintar_iw:e    {:RESULT = e;:} 
+    | declaracion_instr_wh:e    {:RESULT = e;:}
+    | error:e PuntoComa       {:parser.syntax_error((Symbol) e);:}
+;
+
+declaracion_estructuras_while ::=
+    estructura_if:e             {:RESULT = e;:}
+    | estructura_while:e        {:RESULT = e;:}
+    | estructura_pintar_iw:e    {:RESULT = e;:} 
+    | declaracion_instr_wh:e    {:RESULT = e;:}
+    | error:e PuntoComa       {:parser.syntax_error((Symbol) e);:}
+;
+
+declaracion_instrucciones_while ::= 
+    declaracion_estructuras_while:e                                          {:ms.addValorIfWhile(e, eleft, eright);:}
+    | declaracion_instrucciones_while declaracion_estructuras_while:e        {:ms.addValorIfWhile(e, eleft, eright);:}
+;
+
+declaracion_instrucciones_if_while ::= 
+    declaracion_estructuras_if_while:e                                          {:ms.addValorIfWhile(e, eleft, eright);:}
+    | declaracion_instrucciones_if_while declaracion_estructuras_if_while:e     {:ms.addValorIfWhile(e, eleft, eright);:}
+;
+
+declaracion_instrucciones_else ::= 
+    declaracion_estructuras_if_while:e                                          {:ms.addValorElse(e, eleft, eright);:}
+    | declaracion_instrucciones_else declaracion_estructuras_if_while:e         {:ms.addValorElse(e, eleft, eright);:}
+;
+
+declaracion_instrucciones ::= 
+    declaracion_estructuras 
+    | declaracion_instrucciones declaracion_estructuras
+;
+
+estructura_instrucciones ::=
+    Instrucciones ParentesisA instr_id ParentesisC LlaveA declaracion_instrucciones LlaveC 
+    | estructura_instrucciones Instrucciones ParentesisA instr_id ParentesisC LlaveA declaracion_instrucciones LlaveC 
+    | Instrucciones ParentesisA instr_id ParentesisC LlaveA LlaveC 
+    | estructura_instrucciones Instrucciones ParentesisA instr_id ParentesisC LlaveA LlaveC 
+    | error:e LlaveC            {:parser.syntax_error((Symbol) e);:}
+;
+
+instr_id ::= 
+    Identificador:e         {:ms.cargarTablaCorrespondiente(e.toString(), eleft, eright);:}
+;

@@ -1,0 +1,32 @@
+{
+	TIEMPOS: {
+		lienzoId1: {
+			inicio: "_id1",
+			fin: "_id2",
+			imagenes: [
+				{
+					id: "_id1",
+					duracion: 4000
+				},
+				{
+					id: "_id2",
+					duracion: 2000
+				}
+			]
+		},
+		OtroLienzo: {
+			inicio: "_id2",
+			fin: "_id1",
+			imagenes: [
+				{
+					id: "_id1",
+					duracion: 2000
+				},
+				{
+					id: "_id2",
+					duracion: 3000
+				}
+			]
+		}
+	}
+}

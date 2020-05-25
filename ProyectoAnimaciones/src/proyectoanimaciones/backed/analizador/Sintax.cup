@@ -1,0 +1,191 @@
+package proyectoanimaciones.backed.analizador;
+
+import java_cup.runtime.*;
+import proyectoanimaciones.backed.objetos.*;
+import proyectoanimaciones.backed.manejadores.*;
+import proyectoanimaciones.gui.*;
+import java.util.ArrayList;
+import java.util.List;
+
+parser code {:
+
+    private ManejadorSintactico ms = ManejadorSintactico.getInstancia();
+    private Principal principal;
+
+    public Sintax(Lexico lexer, Principal principal) { 
+        super(lexer);   
+        this.principal = principal;
+    }
+
+    public void setAccion(String tipo, String mensaje, String accion){
+        System.out.println("ERROR Lexico Tipo: " + tipo + "\t Mensaje: " + mensaje + "\tAcción: ERROR\n");
+    }
+
+    @Override
+    public void syntax_error(Symbol s){
+        try {
+        if(s != null){
+            principal.addErrores(
+                    "\nError de Sintaxis: " 
+                    + "\n\tLinea #:                 << " + (s.right + 1) + " >>"
+                    + "\n\tColumna #                << " + (((s.left)/(s.right)) + 1) + " >>"
+                    + "\n\tToken NO Reconocido:     << " + (s.value) + " >>" );
+        } 
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+:}
+    
+
+/* Terminales */
+
+terminal    Lienzos, Colores, Tiempos;
+terminal    Nombre, Tipo, Fondo, Red, Blue, Green, TamañoR, Tamaño, Cuadro, DimensionX, DimensionY, Hex;
+terminal    Inicio, Fin, Imagenes, Id, Duracion, Comillas;
+terminal    DosPuntos, Coma, CorcheteA, CorcheteC, LlaveA, LlaveC;
+terminal    Identificador, NumeroRGB_1, NumeroRGB_2, Numero, Extension, NombreLienzo, Hexadecimal;
+
+/* No Terminales */
+
+non terminal    inicio;
+non terminal    estructura_lienzo, estructura_colores, estructura_tiempo;
+non terminal    declaracion_lienzo, struct_lienzo, declaracion_fondo, fondo_rgb, fondo_hex;
+non terminal    declaracion_tamaño, estructura_tamaño, declaracion_colores, struct_id_color;
+non terminal    declaracion_tiempo, struct_id_tiempo, estructura_imagenes, declaracion_duracion;
+
+/* Gramaticas */
+
+start with inicio;
+
+inicio ::= 
+    estructura_lienzo:e     {:ManejadorSintactico.setLienzos((List<Lienzo>) e); ms.imprimir(); ms.imp(); System.out.println("\nAceptado Lienzo");:}
+    | estructura_colores    {:ms.imprimir(); ms.imp(); System.out.println("\nAceptado Colores");:}
+    | estructura_tiempo     {:ms.imprimir(); ms.imp(); System.out.println("\nAceptado Tiempo");:}
+;
+
+/* ESTRUCTURA DE ARCHIVO LIENZO */
+
+estructura_lienzo ::= 
+    CorcheteA Lienzos DosPuntos CorcheteA declaracion_lienzo:e CorcheteC CorcheteC      
+    {:
+        if(e != null) {
+            if(e instanceof Lienzo){
+                List<Lienzo> listaLienzos = new ArrayList<>();
+                listaLienzos.add((Lienzo) e);
+                RESULT = listaLienzos;
+            } else {
+                RESULT = (List<Lienzo>) e;
+            }
+        } else {
+            RESULT = new ArrayList<>();
+        }
+    :}
+;
+
+declaracion_lienzo ::= 
+    Identificador:e DosPuntos CorcheteA struct_lienzo:a Coma struct_lienzo:b Coma  struct_lienzo:c Coma struct_lienzo:d CorcheteC                 
+    {:RESULT = ms.addLienzo(a, b, c, d, eleft, eright, e.toString(), aleft, aright, bleft, bright, cleft, cright, dleft, dright);:}
+    | declaracion_lienzo:x Coma Identificador:e DosPuntos CorcheteA struct_lienzo:a Coma struct_lienzo:b Coma  struct_lienzo:c Coma struct_lienzo:d CorcheteC
+    {:RESULT = ms.addListLienzo(x, ms.addLienzo(a, b, c, d, eleft, eright, e.toString(), aleft, aright, bleft, bright, cleft, cright, dleft, dright), xleft, xright, eleft, eright);:}
+    | error:e CorcheteC                                         {:parser.syntax_error((Symbol) e);:}
+;
+
+struct_lienzo ::=
+    Nombre DosPuntos NombreLienzo:e      {:RESULT = ms.add(e.toString(), eleft, eright, "Nombre");:}
+    | Tipo DosPuntos Extension:e         {:RESULT = ms.add(e.toString(), eleft, eright, "Tipo");:}
+    | declaracion_fondo:e                {:RESULT = (Fondo) e;:}
+    | declaracion_tamaño:e               {:RESULT = (Tamaño) e;:}
+;
+
+declaracion_fondo ::=
+    Fondo:x DosPuntos CorcheteA fondo_rgb:a Coma fondo_rgb:b Coma fondo_rgb:c CorcheteC     {:RESULT = ms.addFondo(ms.comprobarRGB(a, b, c, aleft, aright, bleft, bright, cleft, cright), xleft, xright);:}
+    | Fondo:x DosPuntos CorcheteA fondo_hex:e CorcheteC                                     {:RESULT = ms.addFondo(new Fondo(e.toString()), xleft, xright);:}
+;
+
+fondo_rgb ::=
+    Red DosPuntos NumeroRGB_1:e         {:RESULT = ms.addRGB(new Red(Integer.parseInt(e.toString())), 1, eleft, eright);:}
+    | Red DosPuntos NumeroRGB_2:e       {:RESULT = ms.addRGB(new Red(Integer.parseInt(e.toString())), 1, eleft, eright);:}
+    | Blue DosPuntos NumeroRGB_1:e      {:RESULT = ms.addRGB(new Blue(Integer.parseInt(e.toString())), 2, eleft, eright);:}
+    | Blue DosPuntos NumeroRGB_2:e      {:RESULT = ms.addRGB(new Blue(Integer.parseInt(e.toString())), 2, eleft, eright);:}
+    | Green DosPuntos NumeroRGB_1:e     {:RESULT = ms.addRGB(new Green(Integer.parseInt(e.toString())), 3, eleft, eright);:}
+    | Green DosPuntos NumeroRGB_2:e     {:RESULT = ms.addRGB(new Green(Integer.parseInt(e.toString())), 3, eleft, eright);:}
+;
+
+fondo_hex ::=
+    Hex DosPuntos Hexadecimal:e         {:RESULT = e.toString().replaceAll("#", "");:}
+;
+
+declaracion_tamaño ::=
+    Tamaño:e DosPuntos CorcheteA estructura_tamaño:a Coma estructura_tamaño:b Coma estructura_tamaño:c CorcheteC        {:RESULT = ms.addTamaño(ms.comprobarTamaño(a, b, c, aleft, aright, bleft, bright, cleft, cright), eleft, eright);:}
+    | TamañoR:e DosPuntos CorcheteA estructura_tamaño:a Coma estructura_tamaño:b Coma estructura_tamaño:c CorcheteC     {:RESULT = ms.addTamaño(ms.comprobarTamaño(a, b, c, aleft, aright, bleft, bright, cleft, cright), eleft, eright);:}
+;
+
+estructura_tamaño ::= 
+    Cuadro DosPuntos Numero:e               {:RESULT = ms.addCDXY(e, 1, eleft, eright);:}
+    | Cuadro DosPuntos NumeroRGB_1:e        {:RESULT = ms.addCDXY(e, 1, eleft, eright);:}
+    | Cuadro DosPuntos NumeroRGB_2:e        {:RESULT = ms.addCDXY(e, 1, eleft, eright);:}
+    | DimensionX DosPuntos Numero:e         {:RESULT = ms.addCDXY(e, 2, eleft, eright);:}
+    | DimensionX DosPuntos NumeroRGB_1:e    {:RESULT = ms.addCDXY(e, 2, eleft, eright);:}
+    | DimensionX DosPuntos NumeroRGB_2:e    {:RESULT = ms.addCDXY(e, 2, eleft, eright);:}
+    | DimensionY DosPuntos Numero:e         {:RESULT = ms.addCDXY(e, 3, eleft, eright);:}
+    | DimensionY DosPuntos NumeroRGB_1:e    {:RESULT = ms.addCDXY(e, 3, eleft, eright);:}
+    | DimensionY DosPuntos NumeroRGB_2:e    {:RESULT = ms.addCDXY(e, 3, eleft, eright);:}
+;
+
+/* ESTRUCTURA COLORES */
+
+estructura_colores ::=
+    CorcheteA Colores DosPuntos CorcheteA declaracion_colores CorcheteC CorcheteC
+;
+
+declaracion_colores ::=
+    Identificador DosPuntos CorcheteA CorcheteC                                 
+    | Identificador:e DosPuntos CorcheteA struct_id_color:a CorcheteC                               {:ms.comprobarAddColores(e, a, eleft, eright);:}
+    | declaracion_colores Coma Identificador:e DosPuntos CorcheteA struct_id_color:a CorcheteC      {:ms.comprobarAddColores(e, a, eleft, eright);:}
+    | declaracion_colores Coma Identificador DosPuntos CorcheteA CorcheteC      
+    | error:e CorcheteC                                                                             {:parser.syntax_error((Symbol) e);:} 
+    | error:e Coma                                                                                  {:parser.syntax_error((Symbol) e);:} 
+;
+
+struct_id_color ::=
+    Identificador:e DosPuntos CorcheteA fondo_rgb:a Coma fondo_rgb:b Coma fondo_rgb:c CorcheteC                             {:RESULT = ms.comprobarColor(e.toString(), ms.comprobarRGB(a, b, c, aleft, aright, bleft, bright, cleft, cright), eleft, eright, eleft, eright);:}
+    | Identificador:e DosPuntos CorcheteA fondo_hex:a CorcheteC                                                             {:RESULT = ms.comprobarColor(e.toString(), new Fondo(a.toString()), eleft, eright, eleft, eright);:}
+    | struct_id_color:e Coma Identificador:a DosPuntos CorcheteA fondo_rgb:b Coma fondo_rgb:c Coma fondo_rgb:d CorcheteC    {:RESULT = ms.listaColores(e, ms.comprobarColor(a.toString(), ms.comprobarRGB(b, c, d, bleft, bright, cleft, cright, dleft, dright), aleft, aright, aleft, aright), eleft, eright, aleft, aright);:}
+    | struct_id_color:e Coma Identificador:a DosPuntos CorcheteA fondo_hex:b CorcheteC                                      {:RESULT = ms.listaColores(e, ms.comprobarColor(a.toString(), new Fondo(b.toString()), bleft, bright, aleft, aright), eleft, eright, aleft, aright);:}
+;
+
+/* ESTRUCTURA TIEMPO */
+
+estructura_tiempo ::=
+    CorcheteA Tiempos DosPuntos CorcheteA declaracion_tiempo CorcheteC CorcheteC
+;
+
+declaracion_tiempo ::=
+    Identificador:e DosPuntos CorcheteA struct_id_tiempo:a Coma struct_id_tiempo:b Coma struct_id_tiempo:c CorcheteC                                {:ms.comprobarDuracion(e.toString(), ms.comprobarTiempo(a, b, c, aleft, aright, bleft, bright, cleft, cright), eleft, eright);:}
+    | declaracion_tiempo Coma Identificador:e DosPuntos CorcheteA struct_id_tiempo:a Coma struct_id_tiempo:b Coma struct_id_tiempo:c CorcheteC      {:ms.comprobarDuracion(e.toString(), ms.comprobarTiempo(a, b, c, aleft, aright, bleft, bright, cleft, cright), eleft, eright);:}
+    | error:e CorcheteC                     {:parser.syntax_error((Symbol) e);:} 
+;
+
+struct_id_tiempo ::=
+    Inicio:e DosPuntos NombreLienzo:a                               {:RESULT = ms.add(a.toString().replaceAll("\"", ""), eleft, eright, "Inicio");:}
+    | Inicio:e DosPuntos Comillas Identificador:a Comillas          {:RESULT = ms.add(a.toString(), eleft, eright, "Inicio");:}
+    | Fin:e DosPuntos NombreLienzo:a                                {:RESULT = ms.add(a.toString().replaceAll("\"", ""), eleft, eright, "Fin");:}
+    | Fin:e DosPuntos Comillas Identificador:a Comillas             {:RESULT = ms.add(a.toString(), eleft, eright, "Fin");:}
+    | Imagenes DosPuntos LlaveA estructura_imagenes:e LlaveC        {:RESULT = ms.comprobarTimeImg(e, eleft, eright);:}
+    | Imagenes DosPuntos LlaveA LlaveC                              {:RESULT = ms.addVacioTimeImg();:}
+;
+
+estructura_imagenes ::=
+    CorcheteA declaracion_duracion:e CorcheteC                                          {:RESULT = e;:}
+    | estructura_imagenes:a Coma CorcheteA declaracion_duracion:e CorcheteC             {:RESULT = ms.listaDuraciones(a, e);:}    
+;
+
+declaracion_duracion ::=
+    Id DosPuntos Comillas Identificador:a Comillas Coma Duracion DosPuntos Numero:e             {:RESULT = ms.comprobarExistenciaDuracionImg(new Duracion(a.toString(), Integer.parseInt(e.toString())), aleft, aright);:}
+    | Id DosPuntos Comillas Identificador:a Comillas Coma Duracion DosPuntos NumeroRGB_1:e      {:RESULT = ms.comprobarExistenciaDuracionImg(new Duracion(a.toString(), Integer.parseInt(e.toString())), aleft, aright);:}
+    | Id DosPuntos Comillas Identificador:a Comillas Coma Duracion DosPuntos NumeroRGB_2:e      {:RESULT = ms.comprobarExistenciaDuracionImg(new Duracion(a.toString(), Integer.parseInt(e.toString())), aleft, aright);:}
+    | Duracion DosPuntos Numero:a Coma Id DosPuntos Comillas Identificador:e Comillas           {:RESULT = ms.comprobarExistenciaDuracionImg(new Duracion(a.toString(), Integer.parseInt(e.toString())), aleft, aright);:}
+    | Duracion DosPuntos NumeroRGB_1:a Coma Id DosPuntos Comillas Identificador:e Comillas      {:RESULT = ms.comprobarExistenciaDuracionImg(new Duracion(a.toString(), Integer.parseInt(e.toString())), aleft, aright);:}
+    | Duracion DosPuntos NumeroRGB_2:a Coma Id DosPuntos Comillas Identificador:e Comillas      {:RESULT = ms.comprobarExistenciaDuracionImg(new Duracion(a.toString(), Integer.parseInt(e.toString())), aleft, aright);:}
+;

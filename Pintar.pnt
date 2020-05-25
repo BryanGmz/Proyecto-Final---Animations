@@ -1,0 +1,45 @@
+VARS [
+    /*
+    Sección Variables    
+    */
+    int uno = 25; //primera variables
+    int dos, tres = 25;
+    int cuatro;
+    String idImagen = "_id1", idImagen2 = "_id2";
+    String idImg = "_id1";
+    int cinco = uno - 25 + 35;
+    boolean verdad = uno <> 6, falso = verdad;
+    String id = idImg + "4sd";
+]
+INSTRUCCIONES(lienzoId1)[
+    /*
+    Sección de sentencias    
+    */
+    dos = cinco + 3; PINTAR("Mi" + "Amarillo", idImagen, 3, dos..5);
+    if(verdad){
+        PINTAR(MiAmarillo, idImagen, 3, 2);
+    } else {
+        PINTAR(MiAmarillo, _id2, 1, 2);
+    }
+]
+INSTRUCCIONES(OtroLienzo)[
+    dos = cinco + 2;
+    if(dos<=20 AND true){
+        PINTAR(OtroColor, _id1, dos, dos);
+        dos=dos+1;
+    } else {
+        while (dos <= 60 AND true) {
+            PINTAR(OtroColor, "_id1", dos, dos);
+            dos = dos + 1;
+            if(true){
+                while (dos <= 39 AND true) {
+                    PINTAR(OtroColor, "_id1", dos, dos);
+                    if(true){
+                        dos = dos + 1; }
+                    } 
+            }
+        }
+    }
+    cuatro = 25;
+    PINTAR(MiAmarillo, "_id2", 2,tres);
+]

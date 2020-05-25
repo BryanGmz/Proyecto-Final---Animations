@@ -1,0 +1,30 @@
+{
+	LIENZOS: {
+		lienzoId1: {
+			nombre: "lienzo 1",
+			tipo: "png",
+			Fondo: {
+				Red: 25,
+				Blue: 89,
+				Green: 45
+			},
+			tamaño: {
+				cuadro: 5,
+				dimension_x: 50,
+				dimension_y: 50
+			}
+		},
+		OtroLienzo: {
+			nombre: "lienzo 2",
+			tipo: "gif",
+			Fondo: {
+				HEX: #AB254C
+			},
+			tamaño: {
+				cuadro: 10,
+				dimension_x: 60,
+				dimension_y: 72
+			}
+		}
+	}
+}
