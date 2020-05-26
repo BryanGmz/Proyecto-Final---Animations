@@ -1,12 +1,12 @@
 {
 	TIEMPOS: {
 		lienzoId1: {
-			inicio: "_id1",
+			inicio: "_id2",
 			fin: "_id2",
 			imagenes: [
 				{
 					id: "_id1",
-					duracion: 4000
+					duracion: 5000
 				},
 				{
 					id: "_id2",

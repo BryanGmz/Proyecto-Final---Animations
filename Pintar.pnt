@@ -28,7 +28,7 @@ INSTRUCCIONES(OtroLienzo)[
         PINTAR(OtroColor, _id1, dos, dos);
         dos=dos+1;
     } else {
-        while (dos <= 60 AND true) {
+        while (dos <= 59 AND true) {
             PINTAR(OtroColor, "_id1", dos, dos);
             dos = dos + 1;
             if(true){

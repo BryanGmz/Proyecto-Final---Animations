@@ -5,20 +5,12 @@
  */
 package proyectoanimaciones.backed.manejadores;
 
-import java.awt.*;
 import java.awt.event.*;
-import java.awt.image.*;
 import java.io.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import javax.imageio.*;
 import javax.swing.*;
 import org.netbeans.lib.awtextra.*;
 import proyectoanimaciones.backed.objetos.*;
 import proyectoanimaciones.backed.objetos.Dimension;
-import proyectoanimaciones.backed.objetos.Fondo;
-import proyectoanimaciones.backed.objetos.Green;
-import proyectoanimaciones.backed.objetos.Red;
 import proyectoanimaciones.gui.DialogEditorGrafico;
 
 /**
@@ -26,19 +18,53 @@ import proyectoanimaciones.gui.DialogEditorGrafico;
  * @author bryan
  */
 public class ManejadorPestaña {
-    
-    private static ManejadorPestaña manejadorPestañas;
-    private  ManejadorExportar me = ManejadorExportar.getInstancia();
-    private DialogEditorGrafico dialogEditorGrafico;
-    
-    private ManejadorPestaña(){}
+    /* Variables */
+    private int filas, columnas;
 
-    public static ManejadorPestaña getInstancia() {
-        if (manejadorPestañas == null) {
-            manejadorPestañas = new ManejadorPestaña();
-        }
-        return manejadorPestañas;
-    }
+    private int contadorAncho, contadorAlto;
+    private Duracion idActual;
+
+    private Dimension pixels;
+    private Dimension x;
+    private Dimension y;
+
+    private JLabel coloresEnPaleta[];
+    private JLabel lblCantidadImagenes;
+    private JLabel lblInicio;
+    private JLabel lblFin;
+    private JLabel lblImagen;
+    private JLabel lblDuracion;
+    private JLabel lblColores;
+    private JLabel lblColorSeleccionado;
+    private JLabel jtf[][];
+
+    private JPanel pestañaNueva;
+    private JPanel panelPrincipalPestaña;
+    private JPanel panelHerramientas;
+    private JPanel panelAddImagen;
+    private JPanel panelColores;
+
+    private JTextField txtDuraciones;
+    private JTextField txtCantidad;
+    private JTextField txtSeleccionado;
+
+    private JComboBox comboBoxListaInicio;
+    private JComboBox comboBoxListaFin;
+    private JComboBox comboBoxListaImagenes;
+
+    private JCheckBox checkBoxBorrador;
+
+    private JScrollPane panelScrollColores;
+    private JScrollPane panelScrollImagen;
+
+    private JTextField txtFiels[];
+    private JButton btnGenerar;
+    
+    private Lienzo lienzo;
+    
+    private  ManejadorExportar me = ManejadorExportar.getInstancia();
+    
+    public ManejadorPestaña(){}
     
     public void repintar(JLabel [][] labels, int filas, int columnas, java.awt.Color fondo){
         for (int i = 0; i < filas; i++) {
@@ -98,48 +124,58 @@ public class ManejadorPestaña {
         }
     }
     
+    public void guardarCambios(){
+        if (!txtDuraciones.getText().isEmpty()) {
+            lienzo.modificarDuracion(Integer.parseInt(txtDuraciones.getText()), comboBoxListaImagenes.getSelectedItem().toString());
+        }
+        lienzo.getTiempo().setInicio(comboBoxListaInicio.getSelectedItem().toString());
+        lienzo.getTiempo().setFin(comboBoxListaFin.getSelectedItem().toString());
+        comprobarColores(lienzo, jtf, comboBoxListaImagenes.getSelectedItem().toString());
+    }
+    
     public void addNuevaPestaña(JTabbedPane pestaña, String tituloPestaña, Lienzo lienzo, DialogEditorGrafico deg){
-        dialogEditorGrafico = deg;
-        int filas = lienzo.getTamaño().getDimensionX(), columnas = lienzo.getTamaño().getDimensionY();    
+        filas = lienzo.getTamaño().getDimensionX();
+        columnas = lienzo.getTamaño().getDimensionY();    
+        this.lienzo = lienzo;
+        contadorAncho = 0;
+        contadorAlto = 0;
+        idActual = new Duracion(lienzo.getTiempo().getInicio(), 0);
         
-        int contadorAncho = 0, contadorAlto = 0;
-        Duracion idActual = new Duracion(lienzo.getTiempo().getInicio(), 0);
+        pixels = new Dimension(lienzo.getTamaño().getCuadrado());
+        x = new Dimension(lienzo.getTamaño().getDimensionX());
+        y = new Dimension(lienzo.getTamaño().getDimensionY());
         
-        Dimension pixels = new Dimension(lienzo.getTamaño().getCuadrado());
-        Dimension x = new Dimension(lienzo.getTamaño().getDimensionX());
-        Dimension y = new Dimension(lienzo.getTamaño().getDimensionY());
-        
-        JLabel coloresEnPaleta[] = new JLabel[lienzo.getColores().size()];
-        JLabel lblCantidadImagenes = new javax.swing.JLabel();
-        JLabel lblInicio = new javax.swing.JLabel();
-        JLabel lblFin = new javax.swing.JLabel();
-        JLabel lblImagen = new javax.swing.JLabel();
-        JLabel lblDuracion = new javax.swing.JLabel();
-        JLabel lblColores = new javax.swing.JLabel();
-        JLabel lblColorSeleccionado = new javax.swing.JLabel();
-        JLabel jtf[][] = new JLabel[filas][columnas];
+        coloresEnPaleta = new JLabel[lienzo.getColores().size()];
+        lblCantidadImagenes = new javax.swing.JLabel();
+        lblInicio = new javax.swing.JLabel();
+        lblFin = new javax.swing.JLabel();
+        lblImagen = new javax.swing.JLabel();
+        lblDuracion = new javax.swing.JLabel();
+        lblColores = new javax.swing.JLabel();
+        lblColorSeleccionado = new javax.swing.JLabel();
+        jtf = new JLabel[filas][columnas];
 
-        JPanel pestañaNueva = new javax.swing.JPanel();
-        JPanel panelPrincipalPestaña = new javax.swing.JPanel();
-        JPanel panelHerramientas = new javax.swing.JPanel();
-        JPanel panelAddImagen = new javax.swing.JPanel();
-        JPanel panelColores = new javax.swing.JPanel();
+        pestañaNueva = new javax.swing.JPanel();
+        panelPrincipalPestaña = new javax.swing.JPanel();
+        panelHerramientas = new javax.swing.JPanel();
+        panelAddImagen = new javax.swing.JPanel();
+        panelColores = new javax.swing.JPanel();
 
-        JTextField txtDuraciones = new javax.swing.JTextField();
-        JTextField txtCantidad = new javax.swing.JTextField();
-        JTextField txtSeleccionado = new javax.swing.JTextField();
+        txtDuraciones = new javax.swing.JTextField();
+        txtCantidad = new javax.swing.JTextField();
+        txtSeleccionado = new javax.swing.JTextField();
 
-        JComboBox comboBoxListaInicio = new javax.swing.JComboBox<>();
-        JComboBox comboBoxListaFin = new javax.swing.JComboBox<>();
-        JComboBox comboBoxListaImagenes = new javax.swing.JComboBox<>();
+        comboBoxListaInicio = new javax.swing.JComboBox<>();
+        comboBoxListaFin = new javax.swing.JComboBox<>();
+        comboBoxListaImagenes = new javax.swing.JComboBox<>();
 
-        JCheckBox checkBoxBorrador = new javax.swing.JCheckBox();
+        checkBoxBorrador = new javax.swing.JCheckBox();
 
-        JScrollPane panelScrollColores = new javax.swing.JScrollPane();
-        JScrollPane panelScrollImagen = new javax.swing.JScrollPane();
+        panelScrollColores = new javax.swing.JScrollPane();
+        panelScrollImagen = new javax.swing.JScrollPane();
 
-        JTextField txtFiels[] = new JTextField[lienzo.getColores().size()];
-        JButton btnGenerar = new JButton("Generar");
+        txtFiels = new JTextField[lienzo.getColores().size()];
+        btnGenerar = new JButton("Generar");
         
         lblColorSeleccionado.setText("Selecionado");
         lblCantidadImagenes.setText("Cantidad:");

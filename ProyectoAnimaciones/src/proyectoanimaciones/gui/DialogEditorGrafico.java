@@ -8,6 +8,7 @@ package proyectoanimaciones.gui;
 import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -21,13 +22,14 @@ import proyectoanimaciones.backed.objetos.Lienzo;
  * @author bryan
  */
 public class DialogEditorGrafico extends javax.swing.JDialog {
-    private final ManejadorPestaña manejadorPestañas = ManejadorPestaña.getInstancia();
+    
     private final String pathLienzo;
     private final String pathColores;
     private final String pathTiempo;
     private final String pathPintar;
     private final List<Lienzo> lista;
     private final ManejadorEscritura manejadorEscritura = ManejadorEscritura.getInstancia();
+    private final List<ManejadorPestaña> listaPestañas;
     
     /**
      * Creates new form DialogEditorGrafico
@@ -47,6 +49,7 @@ public class DialogEditorGrafico extends javax.swing.JDialog {
         this.pathPintar = pathPintar;
         this.pathTiempo = pathTiempo;
         this.lista = lista;
+        this.listaPestañas = new ArrayList<>();
         addPestañas();
         this.setLocationRelativeTo(null);
     }
@@ -147,6 +150,9 @@ public class DialogEditorGrafico extends javax.swing.JDialog {
     private void menuGuardarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuGuardarActionPerformed
         // TODO add your handling code here:
         if (pathColores != null && pathLienzo != null && pathPintar != null && pathTiempo != null) {
+            listaPestañas.forEach((listPestaña) -> {
+                listPestaña.guardarCambios();
+            });
             System.out.println("Path: " + pathColores);
             System.out.println("Path: " + pathLienzo);
             System.out.println("Path: " + pathPintar);
@@ -208,9 +214,10 @@ JOptionPane.showMessageDialog(null,
 
     private void addPestañas() {
         lista.forEach((lienzo) -> {
-            manejadorPestañas.addNuevaPestaña(pestañas, lienzo.getNombre(), lienzo, this);
+            ManejadorPestaña mp = new ManejadorPestaña();
+            mp.addNuevaPestaña(pestañas, lienzo.getNombre(), lienzo, this);
+            listaPestañas.add(mp);
         });
-        
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
