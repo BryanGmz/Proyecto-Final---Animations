@@ -13,4 +13,4 @@ nuevamente.
 
 Para iniciar la aplicación debes de tener instalado JDK 8:
 Debes de abrir la terminal en donde se encuentra el .jar ejecutable.
-Debes de ingresar el siguiente comando: **$java -jar ProyectoAnimaciones.jar
+Debes de ingresar el siguiente comando: **$java -jar ProyectoAnimaciones.jar**
